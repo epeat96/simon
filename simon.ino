@@ -16,10 +16,10 @@
 #define LEDSDIFICIL 5 
 
 /*Cantidad de Tiempo que tiene el usuario para responder segun la dificultad*/
-#define TIEMPOFACIL     200
-#define TIEMPOMEDIO     100
-#define TIEMPODIFICIL   50
-#define TIEMPOIMPOSIBLE 25
+#define TIEMPOFACIL     400
+#define TIEMPOMEDIO     200
+#define TIEMPODIFICIL   100
+#define TIEMPOIMPOSIBLE 50
 
 /*Pines para los LEDs*/
 const int ledAzul     = PD_0;
@@ -49,13 +49,15 @@ const int botonPausa    = PD_6;
 #define COLORPAUSA 6
 
 /*Estados del juego*/          
-#define INICIO  0         
-#define SIMON   1         
-#define MOSTRAR 2
-#define JUGADOR 3          
-#define PAUSA   4          
-#define ERROR   5
-#define GANADOR 6
+#define INICIO            0         
+#define SIMON             1         
+#define MOSTRAR           2
+#define JUGADOR           3          
+#define PAUSA             4          
+#define ERROR             5
+#define GANADOR           6
+#define CARGARPARTIDA     7
+#define MOSTRARDIFICULTAD 8
 
 /*Dificultades*/
 #define FACIL     0
@@ -74,6 +76,15 @@ int dificultadLeds;
 int dificultadTiempo;
 int imprimirMenu = 1;
 int hayPartidaGuardada = 0;
+
+/*Partida Guardada 1*/
+int simon1[CANTIDADNIVELES];
+int numeroOrden1;
+int dificultadInicial1;
+/*Partida Guardada 2*/
+int simon2[CANTIDADNIVELES];
+int numeroOrden2;
+int dificultadInicial2;
 
 void setup(){
 	Serial.begin(9600);
@@ -126,11 +137,15 @@ void loop(){
 			apagarLeds();
 			delay(TIEMPOATENCION);
 			break;
+		case MOSTRARDIFICULTAD:
+			mostrarDificultad();
+			break;
 		case SIMON:
 			aumentarDificultad();
 			generarOrdenes(dificultadLeds);
 			break;
 		case MOSTRAR:
+			aumentarDificultad();
 			for(int i=0;i<CANTIDADALERTAS;i++){
 				llamarAtencion();		
 			}
@@ -141,6 +156,13 @@ void loop(){
 			break;
 		case PAUSA:
 			menuPausa();
+			apagarLeds();
+			digitalWrite(ledBlanco,HIGH);
+			digitalWrite(ledPausa,HIGH);
+			digitalWrite(ledError,HIGH);		
+			delay(TIEMPOATENCION);
+			apagarLeds();
+			delay(TIEMPOATENCION);
 			break;	
 		case ERROR:
 			delay(TIEMPOATENCION);
@@ -148,6 +170,149 @@ void loop(){
 			delay(TIEMPOATENCION);
 			apagarLeds();		
 			break;
+		case CARGARPARTIDA:
+			menuCargar();
+			apagarLeds();
+			if(!hayPartidaGuardada){
+				digitalWrite(ledBlanco,HIGH);
+			}
+			if(hayPartidaGuardada == 1){
+				digitalWrite(ledBlanco,HIGH);
+				digitalWrite(ledAzul,HIGH);
+			}
+			if(hayPartidaGuardada == 2){
+				digitalWrite(ledAzul,HIGH);
+				digitalWrite(ledRojo,HIGH);
+			}
+			if(hayPartidaGuardada){
+				digitalWrite(ledNaranja,HIGH);
+			}
+			digitalWrite(ledPausa,HIGH);
+			digitalWrite(ledError,HIGH);		
+			delay(TIEMPOATENCION);
+			apagarLeds();
+			delay(TIEMPOATENCION);
+			break;	
+		case GANADOR:
+			apagarLeds();
+			encenderLeds();
+			delay(TIEMPOATENCION);
+			apagarLeds();
+			delay(TIEMPOATENCION);
+			menuGanador();
+	}
+}
+
+void mostrarDificultad(){
+	if (imprimirMenu){
+		Serial.print("#############################################################################################\n");
+		Serial.print("#La dificultad seleccionada es:                                                             #\n");
+		switch(dificultadInicial){
+			case FACIL:
+				Serial.print("facil");
+				break;
+			case MEDIO:
+				Serial.print("medio");
+				break;
+			case DIFICIL:
+				Serial.print("dificil");
+				break;
+			case IMPOSIBLE:
+				Serial.print("imposible");
+				break;
+		}
+		Serial.print("\n#############################################################################################\n");
+		estadoJuego = SIMON;
+	}
+	imprimirMenu = 0;
+}
+
+void menuGanador(){
+	if (imprimirMenu){
+		Serial.print("#############################################################################################\n");
+		Serial.print("#FELICITACIONES!!! HA GANADO EL JUEGO!                                                      #\n");
+		Serial.print("#Presione cualquier boton para empezar una partida nueva!                                   #\n");
+		Serial.print("#############################################################################################\n");
+	}
+	imprimirMenu = 0;
+}
+
+void menuCargar(){
+	if (imprimirMenu){
+		Serial.print("#############################################################################################\n");
+		Serial.print("#Bienvenido al menu de cargar partida guardada                                              #\n");
+		Serial.print("#Presiona el boton de Pausa para continuar la partida, el boton de reinicio para empezar una#\n");
+		Serial.print("#nueva partida o selecciona alguna de las opciones:                                         #\n");
+		if(!hayPartidaGuardada){
+			Serial.print("#- Guardar en partida 1 (BLANCO)                                                            #\n");
+		}
+		if(hayPartidaGuardada == 1){
+			Serial.print("#- Cargar partida 1     (AZUL)                                                              #\n");
+			Serial.print(" 	DIFICULTAD: ");
+			switch(dificultadInicial1){
+				case FACIL:
+					Serial.print("facil");
+					break;
+				case MEDIO:
+					Serial.print("medio");
+					break;
+				case DIFICIL:
+					Serial.print("dificil");
+					break;
+				case IMPOSIBLE:
+					Serial.print("imposible");
+					break;
+			}
+			Serial.print(" 	NUMERO DE ORDEN: ");
+			Serial.print(numeroOrden1);
+			Serial.print("\n");
+			Serial.print("#- Guardar en partida 2 (BLANCO)                                                            #\n");
+		}
+		if(hayPartidaGuardada == 2){
+			Serial.print("#- Cargar partida 1     (AZUL)                                                              #\n");
+			Serial.print(" 	DIFICULTAD: ");
+			switch(dificultadInicial1){
+				case FACIL:
+					Serial.print("facil");
+					break;
+				case MEDIO:
+					Serial.print("medio");
+					break;
+				case DIFICIL:
+					Serial.print("dificil");
+					break;
+				case IMPOSIBLE:
+					Serial.print("imposible");
+					break;
+			}
+			Serial.print(" 	NUMERO DE ORDEN: ");
+			Serial.print(numeroOrden1);
+			Serial.print("\n");
+			Serial.print("#- Cargar partida 2     (ROJO)                                                              #\n");
+			Serial.print(" 	DIFICULTAD: ");
+			switch(dificultadInicial2){
+				case FACIL:
+					Serial.print("facil");
+					break;
+				case MEDIO:
+					Serial.print("medio");
+					break;
+				case DIFICIL:
+					Serial.print("dificil");
+					break;
+				case IMPOSIBLE:
+					Serial.print("imposible");
+					break;
+			}
+			Serial.print(" 	NUMERO DE ORDEN: ");
+			Serial.print(numeroOrden2);
+			Serial.print("\n");
+		}
+		if(hayPartidaGuardada){
+			Serial.print("#- Borrar partida       (Naranja)                                                           #\n");
+		}
+		Serial.print("#############################################################################################\n");
+		imprimirMenu = !imprimirMenu;
 	}
 }
 
@@ -173,11 +338,10 @@ void aumentarDificultad(){
 				dificultadTiempo = TIEMPODIFICIL;	
 				dificultadLeds = LEDSDIFICIL;
 			}
-
 			break;
 		case DIFICIL:
-				dificultadTiempo = TIEMPODIFICIL;	
-				dificultadLeds = LEDSDIFICIL;
+			dificultadTiempo = TIEMPODIFICIL;	
+			dificultadLeds = LEDSDIFICIL;
 			break;
 		case IMPOSIBLE:
 			dificultadTiempo = TIEMPOIMPOSIBLE;	
@@ -190,12 +354,9 @@ void menuPausa(){
 	if (imprimirMenu){
 		Serial.print("#############################################################################################\n");
 		Serial.print("#Bienvenido al menu de Pausa                                                                #\n");
-		Serial.print("#Presiona el boton de Pausa para continuar la partida o selecciona alguna de las opciones:  #\n");
-		Serial.print("#- Guardar partida (AZUL)                                                                   #\n");
-		if(hayPartidaGuardada){
-			Serial.print("#- Cargar partida guardada (BLANCO)                                                         #\n");
-		}
-		Serial.print("#- Iniciar partida nueva (ROJO)                                                             #\n");
+		Serial.print("#Presiona el boton de Pausa para continuar la partida, el boton de reinicio para empezar una#\n");
+		Serial.print("#nueva partida o selecciona alguna de las opciones:                                         #\n");
+		Serial.print("#- Guardar/Cargar partida (BLANCO)                                                          #\n");
 		Serial.print("#############################################################################################\n");
 		imprimirMenu = !imprimirMenu;
 	}
@@ -280,11 +441,6 @@ void seleccionarDificultad(){
 	}
 }
 
-/*
-* Funcion encenderLeds()
-*    Esta funcion enciende
-*
-*/
 void encenderLeds(){
 	digitalWrite(ledAzul,HIGH);
 	digitalWrite(ledBlanco,HIGH);
@@ -295,12 +451,6 @@ void encenderLeds(){
 	digitalWrite(ledPausa,HIGH);
 }
 
-
-/*
-* Funcion apagarLeds()
-*    Esta funcion apaga
-*
-*/
 void apagarLeds(){
 	digitalWrite(ledAzul,LOW);
 	digitalWrite(ledBlanco,LOW);
@@ -311,12 +461,6 @@ void apagarLeds(){
 	digitalWrite(ledPausa,LOW);
 }
 
-/*
-* Funcion generarOrdenes
-*    Esta funcion genera las ordenes de Simon en el vector "simon"
-*    y actualiza la variable "numeroOrden" con el indice que 
-*    corresponde a la siguiente orden de Simon
-*/
 void generarOrdenes(int dificultad){
 	for(int i = 0; i <= numeroOrden; i++ ){
 		if(simon[i]== -1){
@@ -327,11 +471,6 @@ void generarOrdenes(int dificultad){
 	estadoJuego = MOSTRAR;
 }
 
-/*
-* Funcion mostrarOrdenes
-*    Esta funcion muestra las ordenes en los LEDs correspondientes a
-*    cada color.
-*/
 void mostrarOrdenes(int dificultad){
 	for(int i=0;i < numeroOrden;i++){
 		switch(simon[i]){
@@ -355,35 +494,18 @@ void mostrarOrdenes(int dificultad){
 	estadoJuego = JUGADOR;
 }
 
-/*
-* Funcion reinicializarSimon
-*	Esta funcion vuelve a colocar "-1" en todos los espacios 
-*	del vector "simon"
-*/
 void reinicializarSimon(){
 	for(int i=0;i<CANTIDADNIVELES;i++){
 		simon[i]=-1;
 	}
 }
 
-/*
-* Funcion reinicializarJugador
-*	Esta funcion vuelve a colocar "-1" en todos los espacios 
-*	del vector "jugador"
-*/
 void reinicializarJugador(){
 	for(int i=0;i<CANTIDADNIVELES;i++){
 		jugador[i]=-1;
 	}
 }
 
-/*
-* Funcion esperarJugador
-*    Esta funcion espera que el jugador termine de dar sus respuestas
-*    o que el mismo cometa un error en ellas para pasar a la siguiente
-*    orden de Simon, anunciar la partida como perdida en caso de error
-*    o anunciar que se gano la partida
-*/
 void esperarJugador(){
 	numeroRespuesta = 0;
 	estadoJuego=JUGADOR;
@@ -403,6 +525,9 @@ void verificarPartida(){
 		if(simon[i] != jugador[i]){
 			estadoJuego = ERROR;
 			return;
+		}else if(numeroRespuesta == CANTIDADNIVELES){
+			estadoJuego = GANADOR;
+			return;
 		}
 	}
 }
@@ -413,8 +538,9 @@ void botonAzulInt(){
 	if ( (tiempoActual-tiempoAnt > ESPERA)){
 		switch (estadoJuego){
 			case INICIO:
+				imprimirMenu=1;
 				dificultadInicial = FACIL;
-				estadoJuego = SIMON;
+				estadoJuego = MOSTRARDIFICULTAD;
 				break;
 			case JUGADOR:
 				jugador[numeroRespuesta] = AZUL;
@@ -422,6 +548,20 @@ void botonAzulInt(){
 				digitalWrite(ledAzul,HIGH);
 				numeroRespuesta++;
 				verificarPartida();
+				break;
+			case CARGARPARTIDA:
+				if(hayPartidaGuardada){
+					for(int i=0;i<CANTIDADNIVELES;i++){
+						simon[i] = simon1[i];
+						numeroOrden = numeroOrden1;
+						dificultadInicial = dificultadInicial1;
+					}
+				}
+				estadoJuego = MOSTRAR;
+				break;
+			case GANADOR:
+				estadoJuego = INICIO;
+				imprimirMenu = 1;
 				break;
 		}
 	}
@@ -434,8 +574,9 @@ void botonBlancoInt(){
 	if ( (tiempoActual-tiempoAnt > ESPERA)){
 		switch (estadoJuego){
 			case INICIO:
+				imprimirMenu=1;
 				dificultadInicial = MEDIO;
-				estadoJuego = SIMON;
+				estadoJuego = MOSTRARDIFICULTAD;
 				break;
 			case JUGADOR:
 				jugador[numeroRespuesta] = BLANCO;
@@ -443,6 +584,40 @@ void botonBlancoInt(){
 				digitalWrite(ledBlanco,HIGH);
 				numeroRespuesta++;
 				verificarPartida();
+				break;
+			case PAUSA:
+				estadoJuego = CARGARPARTIDA;	
+				imprimirMenu = 1;
+				break;
+			case CARGARPARTIDA:
+				if(hayPartidaGuardada==0){
+					estadoJuego = PAUSA;
+					imprimirMenu = 1;
+					for(int i=0;i<CANTIDADNIVELES; i++){
+						simon1[i]=simon[i];
+					}
+					numeroOrden1 = numeroOrden;
+					dificultadInicial1 = dificultadInicial;
+					hayPartidaGuardada++;
+					break;
+				}
+				if(hayPartidaGuardada==1){
+					estadoJuego = PAUSA;
+					imprimirMenu = 1;
+					for(int i=0;i<CANTIDADNIVELES; i++){
+						simon2[i]=simon[i];
+					}
+					numeroOrden2 = numeroOrden;
+					dificultadInicial2 = dificultadInicial;
+					hayPartidaGuardada++;
+					break;
+				}
+				estadoJuego = PAUSA;
+				imprimirMenu = 1;
+				break;
+			case GANADOR:
+				estadoJuego = INICIO;
+				imprimirMenu = 1;
 				break;
 		}
 	}
@@ -455,8 +630,9 @@ void botonRojoInt(){
 	if ( (tiempoActual-tiempoAnt > ESPERA)){
 		switch (estadoJuego){
 			case INICIO:
+				imprimirMenu=1;
 				dificultadInicial = DIFICIL;
-				estadoJuego = SIMON;
+				estadoJuego = MOSTRARDIFICULTAD;
 				break;
 			case JUGADOR:
 				jugador[numeroRespuesta] = ROJO;
@@ -464,6 +640,20 @@ void botonRojoInt(){
 				digitalWrite(ledRojo,HIGH);
 				numeroRespuesta++;
 				verificarPartida();
+				break;
+			case CARGARPARTIDA:
+				if(hayPartidaGuardada == 2){
+					for(int i=0;i<CANTIDADNIVELES;i++){
+						simon[i] = simon2[i];
+						numeroOrden = numeroOrden2;
+						dificultadInicial = dificultadInicial2;
+					}
+				}
+				estadoJuego = MOSTRAR;
+				break;
+			case GANADOR:
+				estadoJuego = INICIO;
+				imprimirMenu = 1;
 				break;
 		}
 	}
@@ -476,8 +666,9 @@ void botonNaranjaInt(){
 	if ( (tiempoActual-tiempoAnt > ESPERA)){
 		switch (estadoJuego){
 			case INICIO:
+				imprimirMenu=1;
 				dificultadInicial = IMPOSIBLE;
-				estadoJuego = SIMON;
+				estadoJuego = MOSTRARDIFICULTAD;
 				break;
 			case JUGADOR:
 				jugador[numeroRespuesta] = NARANJA;
@@ -485,6 +676,17 @@ void botonNaranjaInt(){
 				digitalWrite(ledNaranja,HIGH);
 				numeroRespuesta++;
 				verificarPartida();
+				break;
+			case CARGARPARTIDA:
+				if(hayPartidaGuardada){
+					hayPartidaGuardada--;
+				}
+				estadoJuego = PAUSA;
+				imprimirMenu = 1;
+				break;
+			case GANADOR:
+				estadoJuego = INICIO;
+				imprimirMenu = 1;
 				break;
 		}
 	}
@@ -503,6 +705,10 @@ void botonAmarilloInt(){
 				numeroRespuesta++;
 				verificarPartida();
 				break;
+			case GANADOR:
+				estadoJuego = INICIO;
+				imprimirMenu = 1;
+				break;
 		}
 	}
 	tiempoAnt = tiempoActual;
@@ -520,6 +726,13 @@ void botonPausaInt(){
 			case PAUSA:
 				estadoJuego = MOSTRAR;
 				break;
+			case CARGARPARTIDA:
+				estadoJuego = MOSTRAR;
+				break;
+			case GANADOR:
+				estadoJuego = INICIO;
+				imprimirMenu = 1;
+				break;
 		}
 	}
 	tiempoAnt = tiempoActual;
@@ -530,7 +743,19 @@ void botonErrorInt(){
 	int        tiempoActual = millis(); 
 	if ( (tiempoActual-tiempoAnt > ESPERA)){
 		switch (estadoJuego){
+			case PAUSA:
+				estadoJuego = INICIO;
+				imprimirMenu = 1;
+				break;
 			case ERROR:
+				estadoJuego = INICIO;
+				imprimirMenu = 1;
+				break;
+			case CARGARPARTIDA:
+				estadoJuego = INICIO;
+				imprimirMenu = 1;
+				break;
+			case GANADOR:
 				estadoJuego = INICIO;
 				imprimirMenu = 1;
 				break;
